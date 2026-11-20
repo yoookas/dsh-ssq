@@ -1,0 +1,81 @@
+{
+  "name": "dsh-ssq",
+  "version": "26.11.20",
+  "description": "双色球开奖数据插件：往期查询、全量落盘，以及开奖夜（周二/四/日）的自动抓取与阶梯补抓",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./ssq": "./src/index.mjs",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "ssq": "./bin/ssq.mjs"
+  },
+  "files": [
+    "index.js",
+    "lib",
+    "src",
+    "bin",
+    "locale",
+    "icon.svg",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.17"
+  },
+  "scripts": {
+    "fetch": "node bin/ssq.mjs fetch",
+    "latest": "node bin/ssq.mjs latest --count 5",
+    "check": "node bin/ssq.mjs check",
+    "info": "node bin/ssq.mjs info",
+    "test": "node --import ./test/hooks.mjs test/run.mjs",
+    "syntax": "node --check index.js && node --check lib/client.js && node --check bin/ssq.mjs && for f in lib/*.mjs lib/*.js src/*.mjs; do node --check \"$f\" || exit 1; done"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/dsh-schedule": "*",
+    "@deepseek-ai/dsh-tools": "*",
+    "@deepseek-ai/schemastery": "*"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-schedule": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-tools": {
+      "optional": true
+    },
+    "@deepseek-ai/schemastery": {
+      "optional": true
+    }
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh-plugin",
+    "ssq",
+    "双色球",
+    "lottery"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yoookas/dsh-ssq.git"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  }
+}

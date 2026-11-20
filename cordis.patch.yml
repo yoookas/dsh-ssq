@@ -1,0 +1,8 @@
+# 作为 profile bundle 启用时，插入「双色球开奖数据」这一行。
+# 数据层（src/*.mjs）与存档目录都随包走，这里只暴露开奖夜节奏。
+- insert:
+    - id: ssq-draws
+      name: dsh-ssq
+      config:
+        # 开奖夜 21:35 首检；未发布则 +5 / +15 / +45 分钟补抓，再兜底次日 06:00
+        retryOffsetsMinutes: [5, 15, 45]

@@ -1,0 +1,26 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 语法检查（插件、浏览器半侧、数据层、CLI）
+        run: npm run syntax
+      - name: 打包检查（files 清单是否完整）
+        run: |
+          mkdir -p /tmp/dist
+          npm pack --pack-destination /tmp/dist >/dev/null
+          TARBALL=$(ls /tmp/dist/*.tgz)
+          for f in package/index.js package/lib/client.js package/lib/tools.mjs package/src/index.mjs package/bin/ssq.mjs package/cordis.patch.yml package/locale/zh.json package/icon.svg; do
+            tar -tzf "$TARBALL" | grep -qx "$f" || { echo "缺少 $f"; exit 1; }
+          done
+          echo "产物清单 OK"

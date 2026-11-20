@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Double Color Ball draws">
+  <rect width="64" height="64" rx="14" fill="#f4f6fb"/>
+  <circle cx="25" cy="30" r="15" fill="#d7263d"/>
+  <circle cx="25" cy="30" r="15" fill="none" stroke="#a5192c" stroke-width="2"/>
+  <circle cx="41" cy="38" r="13" fill="#1d63c9"/>
+  <circle cx="41" cy="38" r="13" fill="none" stroke="#154a99" stroke-width="2"/>
+  <circle cx="20" cy="24" r="4.2" fill="#fff"/>
+  <circle cx="36" cy="33" r="3.4" fill="#fff"/>
+  <path d="M12 50h40" stroke="#c3ccdd" stroke-width="3" stroke-linecap="round"/>
+</svg>

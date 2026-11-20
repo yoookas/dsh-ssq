@@ -1,0 +1,117 @@
+name: release
+
+# 版本号规则：YY.MM.NN
+#   YY = 年份后两位（Asia/Shanghai）
+#   MM = 月份
+#   NN = 当月第 N 次发布（两位数，从 01 起）
+# 触发方式：
+#   1) 手动 workflow_dispatch：自动算 YY.MM，NN 默认取「本月已有 tag 的最大值 + 1」，也可以手填；
+#   2) 推 tag v26.11.03：直接采用 tag 上的版本号。
+# 这个插件没有编译步骤，"构建" = 语法检查 → 写入版本号 → npm pack → 校验产物 → 上传/发 Release。
+
+on:
+  workflow_dispatch:
+    inputs:
+      nn:
+        description: 'YY.MM.NN 的 NN（留空 = 本月发布序号自动 +1）'
+        required: false
+        default: ''
+      publish_release:
+        description: 创建 GitHub Release 并附上打包产物
+        type: boolean
+        default: true
+      run_tests:
+        description: 同时跑插件冒烟测试（需要能访问 cwl.gov.cn，较慢）
+        type: boolean
+        default: false
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 计算版本号（YY.MM.NN）
+        id: version
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+            echo "来源：tag $VERSION"
+          else
+            YY=$(TZ=Asia/Shanghai date +%y)
+            MM=$(TZ=Asia/Shanghai date +%m)
+            NN="${{ inputs.nn }}"
+            if [ -z "$NN" ]; then
+              LAST=$(git tag -l "v${YY}.${MM}.*" | sed -E 's/.*\.//' | sort -n | tail -1)
+              NN=$(printf '%02d' $(( ${LAST:-0} + 1 )))
+            else
+              NN=$(printf '%02d' "${NN}")
+            fi
+            VERSION="${YY}.${MM}.${NN}"
+            echo "来源：自动计算 $VERSION"
+          fi
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]{2}\.[0-9]{2}\.[0-9]{2}$'; then
+            echo "::error::版本号不是 YY.MM.NN 格式：$VERSION"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "### 版本：$VERSION" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 语法检查
+        run: npm run syntax
+
+      - name: 冒烟测试（可选，需要访问官网）
+        if: inputs.run_tests
+        run: npm test
+
+      - name: 写入版本号
+        run: npm version "${{ steps.version.outputs.version }}" --no-git-tag-version --allow-same-version
+
+      - name: 打包
+        run: |
+          mkdir -p dist
+          npm pack --pack-destination dist
+          ls -l dist
+
+      - name: 校验产物
+        run: |
+          set -euo pipefail
+          TARBALL=$(ls dist/*.tgz)
+          for f in package/index.js package/lib/client.js package/lib/tools.mjs package/lib/watch-ops.mjs package/src/index.mjs package/bin/ssq.mjs package/cordis.patch.yml package/locale/zh.json package/locale/en.json package/icon.svg package/package.json; do
+            tar -tzf "$TARBALL" | grep -qx "$f" || { echo "::error::产物缺少 $f"; exit 1; }
+          done
+          node -e "const v=require('./package.json').version; if (v !== '${{ steps.version.outputs.version }}') process.exit(1); console.log('版本号已写入:', v)"
+          echo "产物：$(basename "$TARBALL")"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dsh-ssq-${{ steps.version.outputs.version }}
+          path: dist/*.tgz
+          if-no-files-found: error
+
+      - name: 创建 GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.publish_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v${{ steps.version.outputs.version }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/*.tgz --clobber
+          else
+            gh release create "$TAG" dist/*.tgz \
+              --title "dsh-ssq ${{ steps.version.outputs.version }}" \
+              --generate-notes
+          fi

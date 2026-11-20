@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Double Color Ball Draws",
+    "description": "Query past Double Color Ball draws (2013+, incl. winners and prize per tier), sync them to disk, and fetch automatically on Tue/Thu/Sun draw nights with 5/10/15-minute and next-morning retries when a draw is not out yet."
+  }
+}
