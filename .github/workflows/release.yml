@@ -67,8 +67,11 @@ jobs:
             echo "::error::版本号不是 YY.MM.NN 格式：$VERSION"
             exit 1
           fi
+          # npm/semver 不接受前导零：26.11.01 -> 26.11.1。展示与 tag 用补零形式，包版本用规范化形式。
+          NPM_VERSION=$(node -p "process.argv[1].split('.').map((p) => String(Number(p))).join('.')" "$VERSION")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "### 版本：$VERSION" >> "$GITHUB_STEP_SUMMARY"
+          echo "npm_version=$NPM_VERSION" >> "$GITHUB_OUTPUT"
+          echo "### 版本：$VERSION（npm: $NPM_VERSION）" >> "$GITHUB_STEP_SUMMARY"
 
       - name: 语法检查
         run: npm run syntax
@@ -78,7 +81,7 @@ jobs:
         run: npm test
 
       - name: 写入版本号
-        run: npm version "${{ steps.version.outputs.version }}" --no-git-tag-version --allow-same-version
+        run: npm version "${{ steps.version.outputs.npm_version }}" --no-git-tag-version --allow-same-version
 
       - name: 打包
         run: |
@@ -93,7 +96,12 @@ jobs:
           for f in package/index.js package/lib/client.js package/lib/tools.mjs package/lib/watch-ops.mjs package/src/index.mjs package/bin/ssq.mjs package/cordis.patch.yml package/locale/zh.json package/locale/en.json package/icon.svg package/package.json; do
             tar -tzf "$TARBALL" | grep -qx "$f" || { echo "::error::产物缺少 $f"; exit 1; }
           done
-          node -e "const v=require('./package.json').version; if (v !== '${{ steps.version.outputs.version }}') process.exit(1); console.log('版本号已写入:', v)"
+          ACTUAL=$(node -p "require('./package.json').version")
+          if [ "$ACTUAL" != "${{ steps.version.outputs.npm_version }}" ]; then
+            echo "::error::package.json 版本是 $ACTUAL，期望 ${{ steps.version.outputs.npm_version }}"
+            exit 1
+          fi
+          echo "版本号已写入：$ACTUAL（展示版本 v${{ steps.version.outputs.version }}）"
           echo "产物：$(basename "$TARBALL")"
 
       - uses: actions/upload-artifact@v4
