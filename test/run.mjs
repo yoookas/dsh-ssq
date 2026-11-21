@@ -159,40 +159,53 @@ class FakeSchedule {
     this.seq = 0;
   }
 
-  async create(sessionId, request) {
+  /** dsh 0.2.2 API：create(request, actorSessionId) —— timing 带类型，target 指定投递目的地。 */
+  async create(request, actorSessionId) {
     const id = `sched-${++this.seq}`;
-    const record = { id, title: request.title, prompt: request.prompt };
-    if (request.weekly) {
+    const timing = request.timing ?? {};
+    const record = {
+      id,
+      title: request.title,
+      prompt: request.prompt,
+      target: request.target ?? { kind: 'session', sessionId: actorSessionId },
+      involvedSessionIds: actorSessionId ? [actorSessionId] : [],
+      status: 'active',
+    };
+
+    if (timing.kind === 'weekly') {
       record.kind = 'weekly';
-      record.time = request.weekly.time;
-      record.timeZone = request.weekly.time_zone;
-      record.weekdays = [...request.weekly.weekdays];
+      record.time = timing.weekly.time;
+      record.timeZone = timing.weekly.time_zone;
+      record.weekdays = [...timing.weekly.weekdays];
       record.scheduledAt = new Date(Date.now() + 3600_000).toISOString();
-    } else if (request.at) {
-      const at = Date.parse(String(request.at));
+    } else if (timing.kind === 'at') {
+      const at = Date.parse(String(timing.at));
       if (!(at > Date.now())) throw new Error('not_future');
       record.kind = 'at';
       record.scheduledAt = new Date(at).toISOString();
     } else {
       throw new Error('invalid_selector');
     }
-    this.tasks.set(id, { sessionId, status: 'active', record });
-    return record;
+
+    this.tasks.set(id, record);
+    return { ...record };
   }
 
   async catalog() {
-    return [...this.tasks.values()].map(({ sessionId, status, record }) => ({ ...record, sessionId, status }));
+    return [...this.tasks.values()].map((task) => ({ ...task }));
   }
 
-  async list({ sessionId }) {
-    return [...this.tasks.values()].filter((task) => task.sessionId === sessionId).map((task) => task.record);
-  }
-
-  async delete({ sessionId, id }) {
-    const task = this.tasks.get(id);
-    if (!task || task.sessionId !== sessionId) return { id, deleted: false, code: 'schedule_not_found' };
-    this.tasks.delete(id);
-    return { id, deleted: true };
+  /** dsh 0.2.2 API：edit({ id, action: 'delete' }, actorSessionId)。 */
+  async edit(request, actorSessionId) {
+    if (request.action !== 'delete') throw new Error(`unsupported edit: ${request.action}`);
+    const record = this.tasks.get(request.id);
+    if (!record) return { id: request.id, deleted: false, code: 'schedule_not_found' };
+    const owner = record.target?.kind === 'session' ? record.target.sessionId : undefined;
+    if (actorSessionId !== undefined && owner !== actorSessionId && !record.involvedSessionIds.includes(actorSessionId)) {
+      return { id: request.id, deleted: false, code: 'schedule_not_found' };
+    }
+    this.tasks.delete(request.id);
+    return { id: request.id, deleted: true };
   }
 }
 
@@ -322,16 +335,24 @@ await checkAsync('ssq_check：更早的开奖夜会被自动收尾', async () =>
   const staleNight = time.addDays(latestDay, -7);
 
   // 造两条「属于更早开奖夜」的一次性任务，并把那一夜写成 pending
-  const first = await schedule.create('session-test', {
-    title: '双色球开奖数据补抓',
-    prompt: automation.retryPrompt(staleNight, '+5 分钟'),
-    at: new Date(Date.now() + 300_000).toISOString(),
-  });
-  const second = await schedule.create('session-test', {
-    title: '双色球开奖数据补抓',
-    prompt: automation.retryPrompt(staleNight, '+10 分钟'),
-    at: new Date(Date.now() + 600_000).toISOString(),
-  });
+  const first = await schedule.create(
+    {
+      title: '双色球开奖数据补抓',
+      prompt: automation.retryPrompt(staleNight, '+5 分钟'),
+      timing: { kind: 'at', at: new Date(Date.now() + 300_000).toISOString() },
+      target: { kind: 'session', sessionId: 'session-test' },
+    },
+    'session-test',
+  );
+  const second = await schedule.create(
+    {
+      title: '双色球开奖数据补抓',
+      prompt: automation.retryPrompt(staleNight, '+10 分钟'),
+      timing: { kind: 'at', at: new Date(Date.now() + 600_000).toISOString() },
+      target: { kind: 'session', sessionId: 'session-test' },
+    },
+    'session-test',
+  );
 
   const statePath = path.join(DATA_DIR, 'watch-state.json');
   const state = JSON.parse(readFileSync(statePath, 'utf8'));
@@ -387,7 +408,7 @@ await checkAsync('ssq_watch_disable：删掉本会话全部任务', async () => 
   const { value } = await call('ssq_watch_disable', {});
   assert.ok(value.deleted.length >= 1);
   const left = await schedule.catalog();
-  assert.equal(left.filter((entry) => entry.sessionId === 'session-test').length, 0);
+  assert.equal(left.filter((entry) => entry.target?.sessionId === 'session-test').length, 0);
 });
 
 await checkAsync('没有 Agent 时自动化工具给出明确错误', async () => {
@@ -477,13 +498,13 @@ await checkAsync('并发写入：两次合并同时进行也不会丢期次', as
 await checkAsync('状态文件丢了也不会重复排补抓阶梯（按 prompt 标记认领）', async () => {
   const night = time.addDays(time.zonedParts(Date.now(), 'Asia/Shanghai').date, 12);
   await call('ssq_check', { date: night });
-  const mine = (await schedule.catalog()).filter((entry) => entry.sessionId === 'session-test');
+  const mine = (await schedule.catalog()).filter((entry) => entry.target?.sessionId === 'session-test');
   const before = mine.length;
   assert.ok(before > 0);
 
   writeFileSync(path.join(LATE_DIR, 'watch-state.json'), '{"version":1,"sessions":{}}\n', 'utf8');
   const { value } = await call('ssq_check', { date: night });
-  const after = (await schedule.catalog()).filter((entry) => entry.sessionId === 'session-test');
+  const after = (await schedule.catalog()).filter((entry) => entry.target?.sessionId === 'session-test');
 
   assert.equal(value.status, 'pending');
   assert.equal(after.length, before, '状态丢失后重复创建了补抓任务');
@@ -552,7 +573,7 @@ await checkAsync('/ssq-watch on：启用并绑定当前会话', async () => {
   const result = await runCommand(' on');
   assert.equal(result.kind, 'success');
   assert.match(result.text, /已启用|已经在运行/);
-  const left = (await schedule.catalog()).filter((entry) => entry.sessionId === 'session-test');
+  const left = (await schedule.catalog()).filter((entry) => entry.target?.sessionId === 'session-test');
   assert.ok(left.some((entry) => entry.kind === 'weekly'));
 });
 
@@ -566,7 +587,7 @@ await checkAsync('/ssq-watch status：输出周期任务与补抓', async () => 
 await checkAsync('/ssq-watch off：删除本会话全部任务', async () => {
   const result = await runCommand(' off');
   assert.equal(result.kind, 'success');
-  const left = (await schedule.catalog()).filter((entry) => entry.sessionId === 'session-test');
+  const left = (await schedule.catalog()).filter((entry) => entry.target?.sessionId === 'session-test');
   assert.equal(left.length, 0);
 });
 

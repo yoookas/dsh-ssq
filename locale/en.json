@@ -1,6 +1,7 @@
 {
   "meta": {
     "title": "Double Color Ball Draws",
-    "description": "Query past Double Color Ball draws (2013+, incl. winners and prize per tier), sync them to disk, and fetch automatically on Tue/Thu/Sun draw nights with 5/10/15-minute and next-morning retries when a draw is not out yet."
+    "description": "Query past Double Color Ball draws (2013+, winners and prize per tier) and keep them in a local archive; on draw nights (Tue/Thu/Sun 21:35 Asia/Shanghai) it fetches automatically and retries at +5/+15/+45 minutes and 06:00 the next morning when the draw is not out yet. Where: Settings → Double Color Ball sets the cadence; enable in a conversation with /ssq-watch on|off|status (or the ssq_watch_enable tool) and the fetched data is delivered back to that conversation. Every check pulls the full official snapshot (~21 requests, ~3 s). Requires dsh >= 0.2.2-rc.5; archiving a Session also deletes its reminders.",
+    "detail": "docs/DETAIL.md"
   }
 }

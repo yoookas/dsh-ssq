@@ -1,6 +1,6 @@
 {
   "name": "dsh-ssq",
-  "version": "26.11.20",
+  "version": "26.11.01",
   "description": "双色球开奖数据插件：往期查询、全量落盘，以及开奖夜（周二/四/日）的自动抓取与阶梯补抓",
   "type": "module",
   "main": "index.js",
@@ -24,11 +24,13 @@
     "bin",
     "locale",
     "icon.svg",
+    "docs",
     "cordis.patch.yml",
     "README.md"
   ],
   "engines": {
-    "node": ">=18.17"
+    "node": ">=18.17",
+    "dsh": ">=0.2.2-rc.5"
   },
   "scripts": {
     "fetch": "node bin/ssq.mjs fetch",

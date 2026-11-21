@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" width="640" height="300" role="img" aria-label="Draw-night schedule: first check at 21:35, retries at 21:40, 21:50 and 22:20, and a 06:00 fallback the next morning, each writing to local storage">
+  <rect x="0" y="0" width="640" height="300" rx="18" fill="#f7f8fc" stroke="#dfe3ee" stroke-width="2"/>
+
+  <!-- 开奖夜（周二/周四/周日） -->
+  <rect x="32" y="62" width="184" height="176" rx="16" fill="#ffffff" stroke="#d7dce8" stroke-width="2"/>
+  <circle cx="86" cy="112" r="26" fill="#d7263d"/>
+  <circle cx="86" cy="112" r="26" fill="none" stroke="#a5192c" stroke-width="3"/>
+  <circle cx="80" cy="104" r="7" fill="#ffffff"/>
+  <circle cx="132" cy="140" r="21" fill="#1d63c9"/>
+  <circle cx="132" cy="140" r="21" fill="none" stroke="#154a99" stroke-width="3"/>
+  <circle cx="127" cy="134" r="5.5" fill="#ffffff"/>
+
+  <rect x="52" y="190" width="34" height="34" rx="9" fill="#e8eefb" stroke="#b9c8ea" stroke-width="2"/>
+  <rect x="98" y="190" width="34" height="34" rx="9" fill="#e8eefb" stroke="#b9c8ea" stroke-width="2"/>
+  <rect x="144" y="190" width="34" height="34" rx="9" fill="#fbe9ea" stroke="#e9b5ba" stroke-width="2"/>
+  <circle cx="69" cy="207" r="6" fill="#1d63c9"/>
+  <circle cx="115" cy="207" r="6" fill="#1d63c9"/>
+  <circle cx="161" cy="207" r="6" fill="#d7263d"/>
+
+  <!-- 时间轴 -->
+  <path d="M244 150 H524" stroke="#c3cbdd" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- 21:35 首次检查（带钟面） -->
+  <circle cx="268" cy="92" r="20" fill="#ffffff" stroke="#1d63c9" stroke-width="3"/>
+  <path d="M268 81 V92 L276 98" fill="none" stroke="#1d63c9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="268" cy="150" r="11" fill="#1d63c9"/>
+  <path d="M268 128 V138" stroke="#1d63c9" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- +5 / +15 / +45 补抓 -->
+  <circle cx="330" cy="150" r="9" fill="#ffffff" stroke="#1d63c9" stroke-width="4"/>
+  <circle cx="378" cy="150" r="9" fill="#ffffff" stroke="#1d63c9" stroke-width="4"/>
+  <circle cx="440" cy="150" r="9" fill="#ffffff" stroke="#1d63c9" stroke-width="4"/>
+
+  <!-- 次日 06:00 兜底 -->
+  <circle cx="512" cy="150" r="11" fill="#f59e0b"/>
+  <circle cx="512" cy="150" r="11" fill="none" stroke="#b45309" stroke-width="3"/>
+  <path d="M500 112 A 12 12 0 1 0 524 112 A 9 9 0 0 1 500 112 Z" fill="#f59e0b" stroke="#b45309" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M512 128 V138" stroke="#b45309" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- 落盘 -->
+  <rect x="536" y="66" width="72" height="168" rx="14" fill="#ffffff" stroke="#d7dce8" stroke-width="2"/>
+  <path d="M572 92 V148" stroke="#15803d" stroke-width="6" stroke-linecap="round"/>
+  <path d="M552 132 L572 154 L592 132" fill="none" stroke="#15803d" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="552" y="176" width="40" height="8" rx="4" fill="#cfe8d8"/>
+  <rect x="552" y="194" width="28" height="8" rx="4" fill="#cfe8d8"/>
+  <path d="M560 214 L570 224 L586 204" fill="none" stroke="#15803d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

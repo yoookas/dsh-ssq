@@ -11,6 +11,7 @@ dsh-ssq/
 ├─ src/                数据层（官网客户端 / 规范化 / CSV·JSONL / 汇总），插件与 CLI 共用
 ├─ bin/ssq.mjs         CLI
 ├─ cordis.patch.yml    bundle 行（dsh 安装插件时读它）
+├─ docs/               插件详情页（DETAIL*.md + preview.svg）
 └─ .github/workflows/  ci（语法+产物） · release（YY.MM.NN 版本 → 打包 → Release）
 ```
 
@@ -18,7 +19,16 @@ dsh-ssq/
 
 在 dsh 里作为 bundle 安装（插件页安装 `dsh-ssq`，或用 `plugin_manager` 指定本包目录 / 包名），然后在设置里配置。
 
-要求：Node ≥ 18.17；dsh 需要 `tools`（数据工具）、`schedule`（自动任务）、`commands`（`/ssq-watch`）三个服务 —— 缺哪个就只跳过对应的入口。
+要求：Node ≥ 18.17；**dsh ≥ 0.2.2-rc.5**（`engines.dsh` 声明）；dsh 需要 `tools`（数据工具）、`schedule`（自动任务）、`commands`（`/ssq-watch`）三个服务 —— 缺哪个就只跳过对应的入口。
+
+### 兼容性
+
+| dsh 版本 | 状态 |
+| --- | --- |
+| ≥ 0.2.2-rc.5 | ✅ 支持（当前） |
+| ≤ 0.2.1-rc.3 | ❌ 不支持：Schedule 的宿主管理 API 已重做（`create(timing + target)`、`edit({ id, action })`、`catalog` 条目带 `target`/`status`），旧版签名会被新版服务拒绝 |
+
+0.2.2 迁移时本插件改了三处：`create` 改为 `{ title, prompt, timing, target }` + `(request, actorSessionId, signal)`；删除任务改用 `edit({ id, action: 'delete' }, actorSessionId)`；任务归属从 `entry.sessionId` 改为 `entry.target.sessionId`（`status` 取值变为 `active|paused|ended`）。
 
 ## 配置（设置 → 双色球）
 
@@ -100,7 +110,7 @@ npm test         # 36 项冒烟测试（需要能访问 cwl.gov.cn）
 
 ## 发布
 
-版本号规则 **YY.MM.NN**：`YY` 年份后两位、`MM` 月份、`NN` 当月第 N 次发布（两位数）。
+版本号规则 **YY.MM.NN**：`YY` 年份后两位、`MM` 月份、`NN` 当月第 N 次发布（两位数，01 起；更新与发布都不冲突，同一天发两次也能区分）。
 
 - `workflow_dispatch`：自动算 `YY.MM`，`NN` 取「本月已有 tag 最大值 + 1」，也可手填；可选是否跑冒烟测试、是否发 Release。
 - 推 tag `v26.11.03`：直接使用 tag 上的版本号。
