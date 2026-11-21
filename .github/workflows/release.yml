@@ -93,9 +93,17 @@ jobs:
         run: |
           set -euo pipefail
           TARBALL=$(ls dist/*.tgz)
-          for f in package/index.js package/lib/client.js package/lib/tools.mjs package/lib/watch-ops.mjs package/src/index.mjs package/bin/ssq.mjs package/cordis.patch.yml package/locale/zh.json package/locale/en.json package/icon.svg package/package.json; do
-            tar -tzf "$TARBALL" | grep -qx "$f" || { echo "::error::产物缺少 $f"; exit 1; }
+          # 先把清单读进变量再比对：tar | grep -q 在 pipefail 下会因为 grep 提前退出、
+          # tar 收到 SIGPIPE 而把整条管道判成失败。
+          LIST=$(tar -tzf "$TARBALL")
+          MISSING=0
+          for f in package/index.js package/lib/client.js package/lib/tools.mjs package/lib/watch-ops.mjs package/src/index.mjs package/bin/ssq.mjs package/cordis.patch.yml package/locale/zh.json package/locale/en.json package/icon.svg package/package.json package/docs/DETAIL.md package/docs/DETAIL.zh.md package/docs/preview.svg; do
+            if ! grep -qxF "$f" <<< "$LIST"; then
+              echo "::error::产物缺少 $f"
+              MISSING=1
+            fi
           done
+          [ "$MISSING" -eq 0 ] || exit 1
           ACTUAL=$(node -p "require('./package.json').version")
           if [ "$ACTUAL" != "${{ steps.version.outputs.npm_version }}" ]; then
             echo "::error::package.json 版本是 $ACTUAL，期望 ${{ steps.version.outputs.npm_version }}"

@@ -20,7 +20,8 @@ jobs:
           mkdir -p /tmp/dist
           npm pack --pack-destination /tmp/dist >/dev/null
           TARBALL=$(ls /tmp/dist/*.tgz)
+          LIST=$(tar -tzf "$TARBALL")
           for f in package/index.js package/lib/client.js package/lib/tools.mjs package/src/index.mjs package/bin/ssq.mjs package/cordis.patch.yml package/locale/zh.json package/icon.svg; do
-            tar -tzf "$TARBALL" | grep -qx "$f" || { echo "缺少 $f"; exit 1; }
+            grep -qxF "$f" <<< "$LIST" || { echo "缺少 $f"; exit 1; }
           done
           echo "产物清单 OK"
